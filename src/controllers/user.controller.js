@@ -3,9 +3,9 @@ import ApiError from '../utils/ApiError.js';
 import ApiResponse from '../utils/ApiResponse.js';
 import { User } from '../models/user.model.js';
 import { OTP } from '../models/otp.model.js';
-import {uploadOnCloudinary, deleteCloudinary} from '../utils/cloudinary.js';
+import { uploadOnCloudinary, deleteCloudinary } from '../utils/cloudinary.js';
 import jwt from 'jsonwebtoken'
-import mongoose from 'mongoose';
+import mailSender from '../utils/mailSender.js';
 
 const generateAccessAndRefreshToken = async (userId) => {
     try {
@@ -25,29 +25,16 @@ const generateAccessAndRefreshToken = async (userId) => {
 }
 
 const registerUser = asyncHandler(async (req, res) => {
-    const { userName, email, fullName, password, otp } = req.body;
+    const { userName, email, fullName, password } = req.body;
 
     if (!userName?.trim() || !email?.trim() || !fullName?.trim() || !password?.trim()) {
         throw new ApiError(400, "All fields are required");
     }
 
-    const existedUser = await User.findOne({
-        $or: [{ userName }, { email }]
-    });
+    const existedUser = await User.findOne({ email });
 
-    if (existedUser) {
-        throw new ApiError(409, 'User with same email or username already exists');
-    }
-
-    // Find the most recent OTP for the email
-    // const response = await OTP.find({ email }).sort({ createdAt: -1 }).limit(1);
-    let response = await OTP.find({ otp: otp });
-    console.log("Response : ",response)
-    if (response.length === 0 || otp !== response[0].otp) {
-      return res.status(400).json({
-        success: false,
-        message: 'The OTP is not valid',
-      });
+    if (existedUser && existedUser?.isVerfied) {
+        throw new ApiError(409, 'User with same email already exists');
     }
 
     // Check if 'avatar' is present in req.files and it is an array with at least one element
@@ -56,7 +43,6 @@ const registerUser = asyncHandler(async (req, res) => {
     }
 
     const avatarLocalPath = req.files.avatar[0].path;
-
     const avatar = await uploadOnCloudinary(avatarLocalPath);
 
     if (!avatar) {
@@ -77,11 +63,16 @@ const registerUser = asyncHandler(async (req, res) => {
         throw new ApiError(500, "Something went wrong");
     }
 
-    return res.status(200).json(
-        new ApiResponse(200, createdUser, "User registered successfully")
-    );
-});
+    const mailResponse = await mailSender(email, createdUser._id, "VERIFY");
 
+    if(mailResponse){
+        return res.status(200).json(
+            new ApiResponse(200, {}, "An email sent to your account please verify")
+        );
+    }
+
+    throw new ApiError(500, "Something went wrong!! An email couldn't sent to your account");
+});
 
 const loginUser = asyncHandler(async (req, res) => {
     const { email, userName, password } = req.body;
@@ -90,12 +81,10 @@ const loginUser = asyncHandler(async (req, res) => {
         throw new ApiError(400, "username or email is required")
     }
 
-    const user = await User.findOne({
-        $or: [{ userName }, { email }]
-    });
+    const user = await User.findOne({ email });
 
-    if (!user) {
-        throw new ApiError(404, "User does not exist");
+    if (!user || !user?.isVerfied) {
+        throw new ApiError(404, "Invalid email");
     }
 
     // you cant access isPasswordCorrect method directly through 'User' beacause User is mogoose object 
@@ -123,9 +112,8 @@ const loginUser = asyncHandler(async (req, res) => {
         )
 });
 
-
 const logoutUser = asyncHandler(async (req, res) => {
-    
+
     await User.findByIdAndUpdate(req.user._id, { $unset: { refreshToken: 1 } }, { new: true });
 
     const option = {
@@ -137,7 +125,6 @@ const logoutUser = asyncHandler(async (req, res) => {
         new ApiResponse(200, {}, "User logged out")
     )
 })
-
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
     try {
@@ -174,7 +161,6 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     }
 })
 
-
 const changeCurrentPassword = asyncHandler(async (req, res) => {
     const { oldPassword, newPassword } = req.body;
 
@@ -191,13 +177,31 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
     return res.status(200).json(new ApiResponse(200, {}, "Password changed successfully"));
 })
 
+const forgotPassword = asyncHandler(async (req, res) => {
+    const { email } = req.body;
+
+    const user = await User.findOne({email});
+
+    if (!user || !user?.isVerfied) {
+        throw new ApiError(404, "Invalid email");
+    }
+
+    const mailResponse = await mailSender(email, user._id, "RESET");
+
+    if(mailResponse){
+        return res.status(200).json(
+            new ApiResponse(200, {}, "An email sent to your account please reset your password")
+        );
+    }
+
+    throw new ApiError(500, "Something went wrong!! An email couldn't sent to your account");
+})
 
 const getCurrentUser = asyncHandler(async (req, res) => {
     return res.status(200).json(
         new ApiResponse(200, req.user, "Current user serched successfully")
     );
 })
-
 
 const updateAccountDetails = asyncHandler(async (req, res) => {
     const { fullName, email } = req.body;
@@ -218,7 +222,6 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
     );
 })
 
-
 const updateUserAvatar = asyncHandler(async (req, res) => {
     const avatarLocalPath = req.file?.path;
 
@@ -228,10 +231,10 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
 
     const cloudinaryPath = await req.user.avatar;
 
-    if(cloudinaryPath){
+    if (cloudinaryPath) {
         await deleteCloudinary(cloudinaryPath);
     }
-    
+
     const avatar = await uploadOnCloudinary(avatarLocalPath);
 
     if (!avatar.url) {
@@ -263,4 +266,5 @@ export {
     getCurrentUser,
     updateAccountDetails,
     updateUserAvatar,
+    forgotPassword
 };

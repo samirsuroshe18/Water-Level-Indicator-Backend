@@ -7,7 +7,6 @@ const userSchema = new Schema({
         type : String,
         required : true,
         trim : true,
-        unique : true,
         lowercase : true,
         index : true
     },
@@ -39,7 +38,22 @@ const userSchema = new Schema({
 
     refreshToken:{
         type : String
-    }
+    },
+
+    isVerfied: {
+        type: Boolean,
+        default: false,
+    },
+
+    isAdmin: {
+        type: Boolean,
+        default: false,
+    },
+
+    verifyToken : String,
+    verifyTokenExpiry : Date,
+    forgotPasswordToken : String,
+    forgotPasswordTokenExpiry : Date,
 
 },{timestamps:true});
 

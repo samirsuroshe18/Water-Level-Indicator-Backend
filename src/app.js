@@ -1,10 +1,18 @@
 import express from "express";
 import cors from 'cors'
 import cookieParser from "cookie-parser";
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+import path from 'path';
 
 const app = express();
 
-// database name --> youtubedb
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const staticPath = path.join(__dirname, '../public');
+
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, './views'))
 
 // this use for cross origin sharing 
 app.use(cors({ origin: process.env.CORS_ORIGIN}))
@@ -13,7 +21,7 @@ app.use(express.json())
 // this is used for parsing url data extended is used for nessted object
 app.use(express.urlencoded({extended: true}))
 // this is used for accessing public resources from server
-app.use(express.static("public"))
+app.use(express.static(staticPath))
 // this is used to parse the cookie
 app.use(cookieParser());
 
