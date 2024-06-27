@@ -14,7 +14,7 @@ import {
 
 const router = Router();
 
-router.route('/register').post(upload.fields([{name:'avatar', maxCount:1}]), registerUser);
+router.route('/register').post(registerUser);
 router.route('/login').post(loginUser);
 router.route('/forgot-password').post(forgotPassword);
 
@@ -24,6 +24,10 @@ router.route('/refresh-token').post(refreshAccessToken);
 router.route('/change-password').post(verifyJwt, changeCurrentPassword);
 router.route('/get-current-user').get(verifyJwt, getCurrentUser);
 router.route('/update-details').patch(verifyJwt, updateAccountDetails);
-router.route('/update-avatar').patch(verifyJwt, upload.single("avatar"), updateUserAvatar);
+
+
+// Imgages Route
+// router.route('/update-avatar').patch(verifyJwt, upload.single("avatar"), updateUserAvatar);
+// router.route('/register').post(upload.fields([{name:'avatar', maxCount:1}]), registerUser);
 
 export default router;

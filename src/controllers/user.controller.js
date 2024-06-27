@@ -25,10 +25,14 @@ const generateAccessAndRefreshToken = async (userId) => {
 }
 
 const registerUser = asyncHandler(async (req, res) => {
-    const { userName, email, fullName, password } = req.body;
+    const { userName, email, confirmPassword, password } = req.body;
 
-    if (!userName?.trim() || !email?.trim() || !fullName?.trim() || !password?.trim()) {
+    if (!userName?.trim() || !email?.trim() || !confirmPassword?.trim() || !password?.trim()) {
         throw new ApiError(400, "All fields are required");
+    }
+
+    if (password !== confirmPassword) {
+        throw new ApiError(400, "Password do not match");
     }
 
     const existedUser = await User.findOne({ email });
@@ -38,23 +42,21 @@ const registerUser = asyncHandler(async (req, res) => {
     }
 
     // Check if 'avatar' is present in req.files and it is an array with at least one element
-    if (!req.files?.avatar || !Array.isArray(req.files.avatar) || req.files.avatar.length === 0) {
-        throw new ApiError(400, 'Avatar file is required');
-    }
+    // if (!req.files?.avatar || !Array.isArray(req.files.avatar) || req.files.avatar.length === 0) {
+    //     throw new ApiError(400, 'Avatar file is required');
+    // }
 
-    const avatarLocalPath = req.files.avatar[0].path;
-    const avatar = await uploadOnCloudinary(avatarLocalPath);
+    // const avatarLocalPath = req.files.avatar[0].path;
+    // const avatar = await uploadOnCloudinary(avatarLocalPath);
 
-    if (!avatar) {
-        throw new ApiError(400, "Avatar file upload failed");
-    }
+    // if (!avatar) {
+    //     throw new ApiError(400, "Avatar file upload failed");
+    // }
 
     const user = await User.create({
-        fullName,
-        avatar: avatar.url || "",
+        userName,
         email,
         password,
-        userName
     });
 
     const createdUser = await User.findById(user._id).select("-password -refreshToken");
@@ -75,10 +77,10 @@ const registerUser = asyncHandler(async (req, res) => {
 });
 
 const loginUser = asyncHandler(async (req, res) => {
-    const { email, userName, password } = req.body;
+    const { email, password } = req.body;
 
-    if (!userName && !email) {
-        throw new ApiError(400, "username or email is required")
+    if (!email) {
+        throw new ApiError(400, "email is required")
     }
 
     const user = await User.findOne({ email });

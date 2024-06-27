@@ -7,7 +7,6 @@ const userSchema = new Schema({
         type : String,
         required : true,
         trim : true,
-        lowercase : true,
         index : true
     },
 
@@ -17,18 +16,6 @@ const userSchema = new Schema({
         trim : true,
         unique : true,
         lowercase : true
-    },
-
-    fullName:{
-        type : String,
-        required : true,
-        trim : true,
-        index : true
-    },
-
-    avatar:{
-        type : String,  // cloudinary url
-        required : true
     },
     
     password:{
