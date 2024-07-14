@@ -37,7 +37,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
     const existedUser = await User.findOne({ email });
 
-    if (existedUser && existedUser?.isVerfied) {
+    if (existedUser) {
         throw new ApiError(409, 'User with same email already exists');
     }
 
@@ -69,7 +69,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
     if(mailResponse){
         return res.status(200).json(
-            new ApiResponse(200, {}, "An email sent to your account please verify")
+            new ApiResponse(200, {}, "An email sent to your account please verify in 10 minutes")
         );
     }
 
@@ -85,7 +85,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
     const user = await User.findOne({ email });
 
-    if (!user || !user?.isVerfied) {
+    if (!user) {
         throw new ApiError(404, "Invalid email");
     }
 
@@ -96,6 +96,16 @@ const loginUser = asyncHandler(async (req, res) => {
 
     if (!isPasswordValid) {
         throw new ApiError(401, "Invalid user credential");
+    }
+
+    if(!user?.isVerfied){
+        const mailResponse = await mailSender(email, user._id, "VERIFY");
+
+        if(mailResponse){
+            return res.status(401).json(
+                new ApiResponse(401, {}, "An email sent to your account please verify in 10 minutes")
+            );
+        }
     }
 
     const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id);
@@ -192,7 +202,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
 
     if(mailResponse){
         return res.status(200).json(
-            new ApiResponse(200, {}, "An email sent to your account please reset your password")
+            new ApiResponse(200, {}, "An email sent to your account please reset your password in 10 minutes")
         );
     }
 
