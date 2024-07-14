@@ -9,8 +9,7 @@ import {
     logoutUser, 
     refreshAccessToken, 
     registerUser, 
-    updateAccountDetails, 
-    updateUserAvatar } from "../controllers/user.controller.js";
+    updateAccountDetails } from "../controllers/user.controller.js";
 
 const router = Router();
 
@@ -23,7 +22,7 @@ router.route('/logout').get(verifyJwt, logoutUser);
 router.route('/refresh-token').post(refreshAccessToken);
 router.route('/change-password').post(verifyJwt, changeCurrentPassword);
 router.route('/get-current-user').get(verifyJwt, getCurrentUser);
-router.route('/update-details').patch(verifyJwt, updateAccountDetails);
+router.route('/update-details').patch(verifyJwt, upload.single("avatar"), updateAccountDetails);
 
 
 // Imgages Route

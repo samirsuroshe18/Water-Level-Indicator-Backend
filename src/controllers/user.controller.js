@@ -216,15 +216,17 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 })
 
 const updateAccountDetails = asyncHandler(async (req, res) => {
+    const avatarRelativePath = req.file ? `${process.env.DOMAIN}/images/${req.file.filename}` : null;
     const { userName } = req.body;
 
-    if (!userName) {
+    if (!userName || !avatarRelativePath) {
         throw new ApiError(400, "User name is required");
     }
 
     const user = await User.findByIdAndUpdate(req.user?._id, {
         $set: {
             userName,
+            avatar : avatarRelativePath,
         }
     }, { new: true }).select("-password -refreshToken")
 

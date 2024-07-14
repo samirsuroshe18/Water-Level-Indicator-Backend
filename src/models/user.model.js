@@ -5,9 +5,8 @@ import bcrypt from 'bcrypt'
 const userSchema = new Schema({
     userName:{
         type : String,
-        required : true,
+        required : [true, 'UserName is required'],
         trim : true,
-        index : true
     },
 
     email:{
@@ -21,6 +20,10 @@ const userSchema = new Schema({
     password:{
         type: String,
         required : [true, 'Password is required']
+    },
+
+    avatar:{
+        type : String,
     },
 
     refreshToken:{
