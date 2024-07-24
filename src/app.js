@@ -28,10 +28,14 @@ app.use(cookieParser());
 // routes import
 import userRouter from './routes/user.routes.js'
 import otpRouter from './routes/otp.routes.js'
+import tankRouter from './routes/tank.routes.js'
+import tankUsersRouter from './routes/tankUsers.routes.js'
 
 //Routes declaration
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/otp", otpRouter);
+app.use("/api/v1/tank", tankRouter);
+app.use("/api/v1/tank-users", tankUsersRouter);
 
 // Custom error handeling
 app.use((err, req, res, next) => {
@@ -39,10 +43,9 @@ app.use((err, req, res, next) => {
   const message = err.message || "Internal server error";
 
   return res.status(statusCode).json({
-    status: statusCode,
+    statusCode: statusCode,
     message: message
   });
-
 })
 
 export default app

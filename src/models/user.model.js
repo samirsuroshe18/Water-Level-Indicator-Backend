@@ -35,9 +35,10 @@ const userSchema = new Schema({
         default: false,
     },
 
-    isAdmin: {
-        type: Boolean,
-        default: false,
+    role: { 
+        type: String, 
+        enum: ['user', 'admin'], 
+        default: 'user' 
     },
 
     verifyToken : String,
