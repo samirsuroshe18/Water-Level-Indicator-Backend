@@ -33,6 +33,12 @@ const TankSchema = new Schema({
         default: 'admin' 
     },
 
+    deleted: { 
+        type: Boolean, 
+        enum: [true, false], 
+        default: false 
+    },
+
 }, {timestamps : true})
  
 

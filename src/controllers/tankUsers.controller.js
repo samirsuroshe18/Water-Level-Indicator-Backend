@@ -4,7 +4,6 @@ import ApiResponse from '../utils/ApiResponse.js';
 import { User } from '../models/user.model.js';
 import mongoose from 'mongoose';
 import { Tank } from '../models/tank.model.js';
-import { conn } from '../index.js';
 import { TankUser } from '../models/tankUsers.model.js';
 
 
@@ -12,10 +11,13 @@ const addTankUser = asyncHandler(async (req, res) => {
     const {tank, email} = req.body;
     const tankId = mongoose.Types.ObjectId.createFromHexString(tank);
 
-    const tankExists = await Tank.findOne({ _id: tankId });
+    const tankExists = await Tank.findOne({ 
+        _id: tankId, 
+        deleted: false
+      });
 
     if(!tankExists){
-        throw new ApiError(401, "Invalid tank id"); 
+        throw new ApiError(401, "Invalid tank key"); 
     }
 
     const userExists = await User.findOne({ email: email });
@@ -23,7 +25,7 @@ const addTankUser = asyncHandler(async (req, res) => {
         throw new ApiError(401, "Invalid eamil"); 
     }
 
-    const existingUser = await TankUser.findOne({ user: userExists._id, tank });
+    const existingUser = await TankUser.findOne({ user: userExists._id, tank: tankId });
 
     if(existingUser){
         throw new ApiError(400, "User is already added");
@@ -32,7 +34,7 @@ const addTankUser = asyncHandler(async (req, res) => {
     const tankUser = await TankUser.create({
         user: userExists._id,
         admin: req.user._id,
-        tank: tankExists._id
+        tank: tankId
     });
 
     if(!tankUser){
@@ -46,11 +48,6 @@ const addTankUser = asyncHandler(async (req, res) => {
 
 const getTankUser = asyncHandler(async (req, res) => {
     const admin = req.admin._id;
-    const users = await TankUser.find({ admin: admin }).select("-createdAt -updatedAt -__v").exec();
-    
-    if (!users || users.length === 0) {
-        throw new ApiError(404, 'No users found.');
-    }
 
     const response = await TankUser.aggregate([
         {
@@ -80,6 +77,31 @@ const getTankUser = asyncHandler(async (req, res) => {
             $addFields: {
                 user: {
                     $first: "$user"
+                }
+            }
+        },
+        {
+            $lookup: {
+                from: "users",
+                localField: "admin",
+                foreignField: "_id",
+                as: "admin",
+                pipeline: [
+                    {
+                        $project: {
+                            _id: 1,
+                            userName: 1,
+                            email: 1,
+                            avatar: 1
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            $addFields: {
+                admin: {
+                    $first: "$admin"
                 }
             }
         },
@@ -117,7 +139,11 @@ const getTankUser = asyncHandler(async (req, res) => {
                 tank : 1
             }
         }
-    ])
+    ]);
+
+    if (!response || response.length <= 0) {
+        throw new ApiError(404, 'No users found.');
+    }
 
     return res.status(200).json(
         new ApiResponse(200, response, "User fetched Successfully")
@@ -129,7 +155,7 @@ const removeTankUser = asyncHandler(async (req, res) => {
 
     const tankUserExists = await TankUser.findOne({ _id: mongoose.Types.ObjectId.createFromHexString(tankUserID) });
     if (!tankUserExists) {
-        throw new ApiError(404, "Invalid tank ID"); 
+        throw new ApiError(404, "Invalid user tank ID"); 
     }
 
     const tankUser = await TankUser.findOneAndDelete({
