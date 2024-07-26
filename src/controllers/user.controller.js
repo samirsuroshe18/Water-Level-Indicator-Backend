@@ -110,7 +110,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
     const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id);
 
-    const loggedInUser = await User.findById(user._id).select("-password -refreshToken");
+    const loggedInUser = await User.findById(user._id).select("-password -refreshToken -createdAt -updatedAt -__v -role");
 
     //option object is created beacause we dont want to modified the cookie to front side
     const option = {
@@ -118,10 +118,9 @@ const loginUser = asyncHandler(async (req, res) => {
         secure: true
     }
 
-    res.status(200).cookie('accessToken', accessToken, option).cookie('refreshToken', refreshToken, option)
-        .json(
-            new ApiResponse(200, { loggedInUser, accessToken, refreshToken }, "User logged in sucessully")
-        )
+    res.status(200).cookie('accessToken', accessToken, option).cookie('refreshToken', refreshToken, option).json(
+        new ApiResponse(200, { loggedInUser, accessToken, refreshToken }, "User logged in sucessully")
+    );
 });
 
 const logoutUser = asyncHandler(async (req, res) => {
