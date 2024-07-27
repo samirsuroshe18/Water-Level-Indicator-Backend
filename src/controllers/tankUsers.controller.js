@@ -5,6 +5,7 @@ import { User } from '../models/user.model.js';
 import mongoose from 'mongoose';
 import { Tank } from '../models/tank.model.js';
 import { TankUser } from '../models/tankUsers.model.js';
+import { AccessTank } from '../models/accessTank.model.js';
 
 
 const addTankUser = asyncHandler(async (req, res) => {
@@ -67,7 +68,6 @@ const getTankUser = asyncHandler(async (req, res) => {
                             _id: 1,
                             userName: 1,
                             email: 1,
-                            avatar: 1
                         }
                     }
                 ]
@@ -92,7 +92,6 @@ const getTankUser = asyncHandler(async (req, res) => {
                             _id: 1,
                             userName: 1,
                             email: 1,
-                            avatar: 1
                         }
                     }
                 ]
@@ -162,7 +161,11 @@ const removeTankUser = asyncHandler(async (req, res) => {
         _id: tankUserID
     });
 
-    if (!tankUser) {
+    const tankAccess = await AccessTank.findOneAndDelete({
+        tankUserId: tankUserID
+    })
+
+    if (!tankUser && !tankAccess) {
         throw new ApiError(500, "Something went wrong");
     }
 

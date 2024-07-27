@@ -2,6 +2,11 @@ import mongoose, {Schema} from "mongoose";
 
 
 const AccessTankSchema = new Schema({
+    tankUserId : {
+        type : Schema.Types.ObjectId,
+        ref : "TankUser"
+    },
+
     user : {
         type : Schema.Types.ObjectId,
         ref : "User"

@@ -27,14 +27,14 @@ app.use(cookieParser());
 
 // routes import
 import userRouter from './routes/user.routes.js'
-import otpRouter from './routes/otp.routes.js'
+import emailRouter from './routes/email.routes.js'
 import tankRouter from './routes/tank.routes.js'
 import tankUsersRouter from './routes/tankUsers.routes.js'
 import accessTankRouter from './routes/accessTank.routes.js'
 
 //Routes declaration
 app.use("/api/v1/users", userRouter);
-app.use("/api/v1/otp", otpRouter);
+app.use("/api/v1/otp", emailRouter);
 app.use("/api/v1/tank", tankRouter);
 app.use("/api/v1/tank-users", tankUsersRouter);
 app.use("/api/v1/access-tank", accessTankRouter);

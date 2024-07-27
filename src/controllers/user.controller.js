@@ -2,8 +2,6 @@ import asyncHandler from '../utils/asynchandler.js';
 import ApiError from '../utils/ApiError.js';
 import ApiResponse from '../utils/ApiResponse.js';
 import { User } from '../models/user.model.js';
-import { OTP } from '../models/otp.model.js';
-import { uploadOnCloudinary, deleteCloudinary } from '../utils/cloudinary.js';
 import jwt from 'jsonwebtoken'
 import mailSender from '../utils/mailSender.js';
 
@@ -41,25 +39,13 @@ const registerUser = asyncHandler(async (req, res) => {
         throw new ApiError(409, 'User with same email already exists');
     }
 
-    // Check if 'avatar' is present in req.files and it is an array with at least one element
-    // if (!req.files?.avatar || !Array.isArray(req.files.avatar) || req.files.avatar.length === 0) {
-    //     throw new ApiError(400, 'Avatar file is required');
-    // }
-
-    // const avatarLocalPath = req.files.avatar[0].path;
-    // const avatar = await uploadOnCloudinary(avatarLocalPath);
-
-    // if (!avatar) {
-    //     throw new ApiError(400, "Avatar file upload failed");
-    // }
-
     const user = await User.create({
         userName,
         email,
         password,
     });
 
-    const createdUser = await User.findById(user._id).select("-password -refreshToken");
+    const createdUser = await User.findById(user._id).select("-password -refreshToken -__v");
 
     if (!createdUser) {
         throw new ApiError(500, "Something went wrong");
@@ -80,7 +66,7 @@ const loginUser = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
 
     if (!email) {
-        throw new ApiError(400, "email is required")
+        throw new ApiError(400, "email is required");
     }
 
     const user = await User.findOne({ email });
@@ -110,7 +96,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
     const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id);
 
-    const loggedInUser = await User.findById(user._id).select("-password -refreshToken -createdAt -updatedAt -__v -role");
+    const loggedInUser = await User.findById(user._id).select("-password -refreshToken -__v");
 
     //option object is created beacause we dont want to modified the cookie to front side
     const option = {
@@ -210,62 +196,22 @@ const forgotPassword = asyncHandler(async (req, res) => {
 
 const getCurrentUser = asyncHandler(async (req, res) => {
     return res.status(200).json(
-        new ApiResponse(200, req.user, "Current user serched successfully")
+        new ApiResponse(200, req.user.select('-__v'), "Current user serched successfully")
     );
 })
 
 const updateAccountDetails = asyncHandler(async (req, res) => {
-    const avatarRelativePath = req.file ? `${process.env.DOMAIN}/images/${req.file.filename}` : null;
     const { userName } = req.body;
-
-    if (!userName || !avatarRelativePath) {
-        throw new ApiError(400, "User name is required");
-    }
 
     const user = await User.findByIdAndUpdate(req.user?._id, {
         $set: {
-            userName,
-            avatar : avatarRelativePath,
+            userName : userName || req.user.userName,
         }
-    }, { new: true }).select("-password -refreshToken")
+    }, { new: true }).select("-password -refreshToken");
 
     return res.status(200).json(
-        new ApiResponse(200, user, "Account details updated successfully")
+        new ApiResponse(200, {}, "Account details updated successfully")
     );
-})
-
-const updateUserAvatar = asyncHandler(async (req, res) => {
-    const avatarLocalPath = req.file?.path;
-
-    if (!avatarLocalPath) {
-        throw new ApiError(400, "Avatar file is missing");
-    }
-
-    const cloudinaryPath = await req.user.avatar;
-
-    if (cloudinaryPath) {
-        await deleteCloudinary(cloudinaryPath);
-    }
-
-    const avatar = await uploadOnCloudinary(avatarLocalPath);
-
-    if (!avatar.url) {
-        throw new ApiError(400, "Error while uploading on avatar");
-    }
-
-    const user = await User.findByIdAndUpdate(
-        req.user?._id,
-        {
-            $set: {
-                avatar: avatar.url
-            }
-        },
-        { new: true }
-    ).select("-password")
-
-    return res.status(200).json(
-        new ApiResponse(200, user, "Avatar image uploaded successfully")
-    )
 })
 
 
@@ -277,6 +223,5 @@ export {
     changeCurrentPassword,
     getCurrentUser,
     updateAccountDetails,
-    updateUserAvatar,
     forgotPassword
 };

@@ -25,7 +25,7 @@ const registerTank = asyncHandler(async (req, res) => {
         }
     }
 
-    const query = `SELECT * FROM waterSensorData WHERE mac = ? AND loc = ? AND client = ? AND node = ? ORDER BY id DESC LIMIT 1;`;
+    const query = `SELECT * FROM waterSensorData WHERE mac = ? AND loc = ? AND client = ? AND node = ? LIMIT 1;`;
     const [results] = await conn.execute(query, [mac, loc, client, node]);
 
     if (!results || results.length <= 0) {
@@ -146,7 +146,7 @@ const removeTank = asyncHandler(async (req, res)=>{
     const result2 = await TankUser.deleteMany({ tank: tankId });
     const result3 = await AccessTank.deleteMany({ tank: tankId });
 
-    if(!result1 && !result2){
+    if(!result1 && !result2 && result3){
         throw new ApiError(401, "delete operation is failed");
     }
 
