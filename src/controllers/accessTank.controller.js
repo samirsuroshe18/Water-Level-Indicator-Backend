@@ -33,6 +33,7 @@ const addAccessTank = asyncHandler(async (req, res) =>{
     }
 
     const tankUser = await AccessTank.create({
+        tankUserId: tankId,
         user: userId,
         admin: tankExists.admin,
         tank: tankExists.tank
@@ -68,8 +69,7 @@ const getAccessTank = asyncHandler(async (req, res) =>{
                         $project: {
                             _id: 1,
                             userName: 1,
-                            email: 1,
-                            avatar: 1
+                            email: 1
                         }
                     }
                 ]
@@ -94,7 +94,6 @@ const getAccessTank = asyncHandler(async (req, res) =>{
                             _id: 1,
                             userName: 1,
                             email: 1,
-                            avatar: 1
                         }
                     }
                 ]
