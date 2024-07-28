@@ -3,15 +3,19 @@ import mysql from "mysql2/promise";
 
 const connectMysql = async () => {
     try {
-        const conn = await mysql.createConnection({
+        const conn = mysql.createPool({
             host: process.env.MYSQL_HOST,
             user: process.env.MYSQL_USER,
             password: process.env.MYSQL_PASSWORD,
-            database: process.env.MYSQL_DB
+            database: process.env.MYSQL_DB,
+            waitForConnections: true,
+            connectionLimit: 10,
+            queueLimit: 0
         });
 
-        console.log("Connected to MySQL database!");
-        return conn;
+        const connection = await conn.getConnection();
+        console.log("Connection is establish");
+        return connection;
     } catch (error) {
         console.error("MySQL connection error:", error);
         process.exit(1);
