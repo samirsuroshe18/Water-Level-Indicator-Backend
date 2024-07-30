@@ -53,64 +53,71 @@ const getTankUser = asyncHandler(async (req, res) => {
     const response = await TankUser.aggregate([
         {
             $match: {
-                admin : admin
+                admin: admin
             }
         },
         {
             $lookup: {
                 from: "users",
-                localField: "user",
-                foreignField: "_id",
-                as: "user",
+                let: { userId: "$user" },
                 pipeline: [
+                    { 
+                        $match: { 
+                            $expr: { $eq: ["$_id", "$$userId"] }
+                        }
+                    },
                     {
                         $project: {
                             _id: 1,
                             userName: 1,
-                            email: 1,
+                            email: 1
                         }
                     }
-                ]
+                ],
+                as: "user"
             }
         },
         {
             $addFields: {
-                user: {
-                    $first: "$user"
-                }
+                user: { $arrayElemAt: ["$user", 0] }
             }
         },
         {
             $lookup: {
                 from: "users",
-                localField: "admin",
-                foreignField: "_id",
-                as: "admin",
+                let: { adminId: "$admin" },
                 pipeline: [
+                    { 
+                        $match: { 
+                            $expr: { $eq: ["$_id", "$$adminId"] }
+                        }
+                    },
                     {
                         $project: {
                             _id: 1,
                             userName: 1,
-                            email: 1,
+                            email: 1
                         }
                     }
-                ]
+                ],
+                as: "admin"
             }
         },
         {
             $addFields: {
-                admin: {
-                    $first: "$admin"
-                }
+                admin: { $arrayElemAt: ["$admin", 0] }
             }
         },
         {
             $lookup: {
                 from: "tanks",
-                localField: "tank",
-                foreignField: "_id",
-                as: "tank",
+                let: { tankId: "$tank" },
                 pipeline: [
+                    { 
+                        $match: { 
+                            $expr: { $eq: ["$_id", "$$tankId"] }
+                        }
+                    },
                     {
                         $project: {
                             _id: 1,
@@ -120,14 +127,13 @@ const getTankUser = asyncHandler(async (req, res) => {
                             mac: 1
                         }
                     }
-                ]
+                ],
+                as: "tank"
             }
         },
         {
             $addFields: {
-                tank: {
-                    $first: "$tank"
-                }
+                tank: { $arrayElemAt: ["$tank", 0] }
             }
         },
         {
@@ -135,10 +141,11 @@ const getTankUser = asyncHandler(async (req, res) => {
                 _id: 1,
                 admin: 1,
                 user: 1,
-                tank : 1
+                tank: 1
             }
         }
     ]);
+    
 
     if (!response || response.length <= 0) {
         throw new ApiError(404, 'No users found.');
