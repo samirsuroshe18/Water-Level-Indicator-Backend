@@ -109,9 +109,9 @@ const getTank = asyncHandler(async (req, res)=>{
                 user: tank.user,
                 ...rows[0] || null,
             }
-          });
+        });
       
-          const tankData = await Promise.all(tankDataPromises);
+        const tankData = await Promise.all(tankDataPromises);
     
         return res.status(200).json(
             new ApiResponse(200, tankData, "Tank data fetched successfully")
@@ -167,4 +167,68 @@ const removeTank = asyncHandler(async (req, res)=>{
 });
 
 
-export{registerTank, getRegisteredTank, addTank, getTank, removeTank}
+const getAllClients = asyncHandler(async (req, res)=>{
+    const conn = await connectMysql();
+    try{
+        const sqlQuery1 = `SELECT DISTINCT client FROM waterSensorData`;
+        const [rows] = await conn.execute(sqlQuery1);
+
+        return res.status(200).json(
+            new ApiResponse(200, rows, "Tank clients fetched successfully")
+        );
+    }finally{
+        conn.release();
+    }
+});
+
+
+const getAllClientTanks = asyncHandler(async (req, res)=>{
+    const clientName = req.query.clientName;
+    const conn = await connectMysql();
+    try{    
+        const sqlQuery1 = `SELECT DISTINCT node, mac, client FROM waterSensorData WHERE client = ?`;
+        const params = [clientName];
+        const [rows] = await conn.execute(sqlQuery1, params);
+        
+        const tankPromises = rows.map(async (tank) => {
+            const sqlQuery = `SELECT client, loc, node, d1, dtime, mac FROM waterSensorData WHERE node = ? AND mac = ? AND client = ? ORDER BY id DESC limit 1`;
+            const params = [tank.node, tank.mac, tank.client];
+            
+            const [rows] = await conn.execute(sqlQuery, params);
+            return {
+                ...rows[0] || null,
+            }
+        });
+
+        const tankDataPromises = rows.map(async (tank) => {
+
+            const sqlQuery2 = `SELECT reading_time FROM waterSensorData WHERE node = ? AND mac = ? AND client = ? ORDER BY id ASC limit 1`;
+            const params2 = [tank.node, tank.mac, tank.client];
+            
+            const [rows] = await conn.execute(sqlQuery2, params2);
+            return {
+                ...rows[0] || null,
+            }
+        });
+      
+        const tank = await Promise.all(tankPromises);
+        const tankData = await Promise.all(tankDataPromises);
+
+        const mergedArr = tank.map((item, index) => {
+           return {
+            ...item,
+            startDate : tankData[index].reading_time
+           }
+          });
+
+        return res.status(200).json(
+            new ApiResponse(200, mergedArr, "Tank clients fetched successfully")
+        );
+    
+    }finally{
+        conn.release();
+    }
+});
+
+
+export{registerTank, getRegisteredTank, addTank, getTank, removeTank, getAllClientTanks, getAllClients}
