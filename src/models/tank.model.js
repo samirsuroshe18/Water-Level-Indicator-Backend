@@ -39,6 +39,12 @@ const TankSchema = new Schema({
         default: false 
     },
 
+    access : {
+        type : Boolean,
+        enum: [true, false],
+        default : true
+    }
+
 }, {timestamps : true})
  
 

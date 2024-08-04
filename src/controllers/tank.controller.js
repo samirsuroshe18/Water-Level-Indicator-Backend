@@ -63,7 +63,11 @@ const addTank = asyncHandler(async (req, res) =>{
     const tankExists = await Tank.findById(tankId);
 
     if(!tankExists){
-        throw new ApiError(401, "Invalid tank key");
+        throw new ApiError(401, "Invalid tank key or tank doesn't exists");
+    }
+
+    if(!tankExists?.access){
+        throw new ApiError(401, "Access is denied");
     }
 
     if(tankExists.user.toString() !== req.user._id.toString() && tankExists.role === "admin"){
@@ -92,7 +96,8 @@ const getTank = asyncHandler(async (req, res)=>{
     try{
         const tanks = await Tank.find({ 
             user: req.user._id, 
-            deleted: false
+            deleted: false,
+            access: true
           }).select("-createdAt -updatedAt -__v");
     
         if (!tanks || tanks.length <= 0) {
@@ -104,10 +109,17 @@ const getTank = asyncHandler(async (req, res)=>{
             const params = [tank.loc, tank.client, tank.node, tank.mac];
             
             const [rows] = await conn.execute(sqlQuery, params);
+
+            const deviceDate = new Date(rows[0].dtime.replace(' ', 'T'));
+                const differenceInMs = new Date() - deviceDate;
+                const differenceInMinutes = differenceInMs / 1000 / 60;
+                let status = differenceInMinutes > 5 ? "Offline" : "Online";
+
             return {
                 _id: tank._id,
                 user: tank.user,
                 ...rows[0] || null,
+                status
             }
         });
       
@@ -170,11 +182,18 @@ const removeTank = asyncHandler(async (req, res)=>{
 const getAllClients = asyncHandler(async (req, res)=>{
     const conn = await connectMysql();
     try{
-        const sqlQuery1 = `SELECT DISTINCT client FROM waterSensorData`;
+        const sqlQuery1 = `SELECT DISTINCT client FROM device_info`;
         const [rows] = await conn.execute(sqlQuery1);
 
+        const data = rows.map((data)=>{
+            return data.client;
+        });
+
+        const unwantedElements = [null, "Test", "Test 3", "Test5", "Test 7"];
+        const filteredData = data.filter(item => !unwantedElements.includes(item));
+
         return res.status(200).json(
-            new ApiResponse(200, rows, "Tank clients fetched successfully")
+            new ApiResponse(200, filteredData, "Tank clients fetched successfully")
         );
     }finally{
         conn.release();
@@ -185,44 +204,51 @@ const getAllClients = asyncHandler(async (req, res)=>{
 const getAllClientTanks = asyncHandler(async (req, res)=>{
     const clientName = req.query.clientName;
     const conn = await connectMysql();
-    try{    
-        const sqlQuery1 = `SELECT DISTINCT node, mac, client FROM waterSensorData WHERE client = ?`;
+    try{       
+        const sqlQuery1 = `SELECT * FROM device_info  WHERE client = ?`;
         const params = [clientName];
         const [rows] = await conn.execute(sqlQuery1, params);
         
         const tankPromises = rows.map(async (tank) => {
             const sqlQuery = `SELECT client, loc, node, d1, dtime, mac FROM waterSensorData WHERE node = ? AND mac = ? AND client = ? ORDER BY id DESC limit 1`;
             const params = [tank.node, tank.mac, tank.client];
-            
             const [rows] = await conn.execute(sqlQuery, params);
-            return {
-                ...rows[0] || null,
-            }
-        });
 
-        const tankDataPromises = rows.map(async (tank) => {
+            const deviceDate = new Date(rows[0].dtime.replace(' ', 'T'));
+            const differenceInMs = new Date() - deviceDate;
+            const differenceInMinutes = differenceInMs / 1000 / 60;
+            let status = differenceInMinutes > 5 ? "Offline" : "Online";
 
-            const sqlQuery2 = `SELECT reading_time FROM waterSensorData WHERE node = ? AND mac = ? AND client = ? ORDER BY id ASC limit 1`;
-            const params2 = [tank.node, tank.mac, tank.client];
-            
-            const [rows] = await conn.execute(sqlQuery2, params2);
-            return {
-                ...rows[0] || null,
-            }
+            let install;
+            const addedByUser = await Tank.findOne({client: tank.client, node: tank.node, mac: tank.mac}).exec();
+
+            if(addedByUser){
+                install = true;
+                return {
+                    ...rows[0] || null,
+                    startDate : tank.startDate,
+                    status,
+                    installOnApp : install,
+                    access : addedByUser.access,
+                    startDate: tank.start_time
+                }
+            }else{
+                install = false;
+                return {
+                    ...rows[0] || null,
+                    status,
+                    installOnApp : install,
+                    startDate : tank.start_time,
+                }
+            } 
         });
       
         const tank = await Promise.all(tankPromises);
-        const tankData = await Promise.all(tankDataPromises);
 
-        const mergedArr = tank.map((item, index) => {
-           return {
-            ...item,
-            startDate : tankData[index].reading_time
-           }
-          });
+        if(tank.length <= 0) throw new ApiError(401, "Failed to load tanks");
 
         return res.status(200).json(
-            new ApiResponse(200, mergedArr, "Tank clients fetched successfully")
+            new ApiResponse(200, tank, "All Tanks fetched successfully")
         );
     
     }finally{
@@ -230,5 +256,126 @@ const getAllClientTanks = asyncHandler(async (req, res)=>{
     }
 });
 
+const deleteTankFromAdmin = asyncHandler(async (req, res)=>{
+    const {client, node, mac} = req.body;
+    const tank = await Tank.findOne({client, node, mac});
+    if(!tank){
+        throw new ApiError(401, "Tank Does not exists");
+    }
+    const isTankDel = await Tank.deleteMany({_id:tank._id});
+    const isUserDel = await TankUser.deleteMany({tank:tank._id});
+    const isAccessTankDel = await AccessTank.deleteMany({ tank: tank._id });
+    if(!isTankDel && !isUserDel && !isAccessTankDel){
+        throw new ApiError(401, "Failed");
+    }
 
-export{registerTank, getRegisteredTank, addTank, getTank, removeTank, getAllClientTanks, getAllClients}
+    return res.status(200).json(
+        new ApiResponse(200, {}, "Device deleted successfully")
+    )
+})
+
+const tankAccessFromAdmin = asyncHandler(async (req, res)=>{
+    const {client, node, mac} = req.body;
+    const isDel = await Tank.findOneAndUpdate({client, node, mac}, [
+        { $set: { access: { $cond: { if: "$access", then: false, else: true } } } } // Toggle the boolean field
+    ],);
+    if(!isDel){
+        throw new ApiError(401, "Tank Does not exist");
+    }
+
+    return res.status(200).json(
+        new ApiResponse(200, {}, "Device access modified successfully")
+    )
+});
+
+const addNewTable = asyncHandler(async(req, res)=>{
+    const conn = await connectMysql();
+    try{
+        const sqlQuery1 = `SELECT DISTINCT client FROM device_info`;
+        const [rows1] = await conn.execute(sqlQuery1);
+        const table1 = rows1.map((data)=>{
+            return data.client;
+        });
+    
+        const sqlQuery2 = `SELECT DISTINCT client FROM waterSensorData`;
+        const [rows2] = await conn.execute(sqlQuery2);
+        const table2 = rows2.map((data)=>{
+            return data.client;
+        });
+    
+        const unique = table2.filter(item => !table1.includes(item));
+
+        const unwantedElements = [
+            null,
+        ];
+        const filteredData = unique.filter(item => !unwantedElements.includes(item));
+
+        console.log(filteredData);
+
+        const tankPromises1 = filteredData.map(async (item)=>{
+            const sqlQuery3 = `SELECT DISTINCT node, mac, client FROM waterSensorData WHERE client = ?`;
+            const params = [item];
+            const [rows] = await conn.execute(sqlQuery3, params);
+            return rows
+        })
+
+        const tank = await Promise.all(tankPromises1);
+        console.log(tank);
+        
+        let tankPromises = [];
+
+// Collect all promises
+for (let i = 0; i < tank.length; i++) {
+    const promises = tank[i].map(async (tankItem) => {
+        const sqlQuery = `SELECT client, node, mac, reading_time FROM waterSensorData WHERE node = ? AND mac = ? AND client = ? ORDER BY reading_time ASC LIMIT 1`;
+        const params = [tankItem.node, tankItem.mac, tankItem.client];
+        
+        const [rows] = await conn.execute(sqlQuery, params);
+        return rows[0] || null;
+    });
+    
+    // Add the promises of the current array to the tankPromises array
+    tankPromises.push(...promises);
+}
+
+// Execute all promises and get the results
+const results = await Promise.all(tankPromises);
+
+// Optional: Flatten the results if needed (results is a 2D array)
+const flattenedResults = results.flat();
+
+console.log(results);
+        // const sqlQuery3 = `SELECT DISTINCT node, mac, client FROM waterSensorData WHERE client = ?`;
+        // const params = ['Blossom'];
+        // const [rows] = await conn.execute(sqlQuery3, params);
+        // const tankPromises = rows.map(async (tank) => {
+        //     const sqlQuery = `SELECT client, node, mac, reading_time FROM waterSensorData WHERE node = ? AND mac = ? AND client = ? ORDER BY reading_time ASC limit 1`;
+        //     const params = [tank.node, tank.mac, tank.client];
+            
+        //     const [rows] = await conn.execute(sqlQuery, params);
+        //     return {
+        //         ...rows[0] || null,
+        //     }
+        // });
+
+        // const tank = await Promise.all(tankPromises);
+
+        // Insert data into table
+const sql = `INSERT INTO device_info (client, node, mac, start_time) VALUES ?`;
+const values = results.map(item => [item.client, item.node, item.mac, item.reading_time]);
+
+conn.query(sql, [values], (error, results) => {
+  if (error) throw error;
+  console.log('Data inserted:', results);
+});
+    
+        res.status(200).json(
+            new ApiResponse(200, {}, "success")
+        )
+    }finally{
+        conn.release();
+    }
+})
+
+
+export{registerTank, getRegisteredTank, addTank, getTank, removeTank, getAllClientTanks, getAllClients, deleteTankFromAdmin, tankAccessFromAdmin, addNewTable}
