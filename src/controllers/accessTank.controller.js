@@ -5,6 +5,7 @@ import mongoose from 'mongoose';
 import { TankUser } from '../models/tankUsers.model.js';
 import { AccessTank } from '../models/accessTank.model.js';
 import { connectMysql } from '../database/database.js';
+import { Tank } from '../models/tank.model.js';
 
 
 const addAccessTank = asyncHandler(async (req, res) =>{
@@ -15,7 +16,12 @@ const addAccessTank = asyncHandler(async (req, res) =>{
     const tankExists = await TankUser.findById(tankId);
 
     if(!tankExists){
-        throw new ApiError(401, "Invalid tank key");
+        throw new ApiError(401, "Invalid tank key or tank does not exists");
+    }
+
+    const tankExist = await Tank.findById(tankExists.tank);
+    if(tankExist && !tankExist.access){
+        throw new ApiError(401, "Access denied");
     }
 
     if(tankExists.user.toString() !== userId.toString()){
@@ -175,10 +181,13 @@ const getAccessTank = asyncHandler(async (req, res) =>{
                     ...rows[0] || null,
                     status
                 }
+            }else{
+                return null;
             }
           });
-    
-        const tankData = await Promise.all(tankDataPromises);
+
+          const tankData = (await Promise.all(tankDataPromises)).filter(data => data !== null);
+        console.log(tankData);
 
         if (!tankData || tankData.length <= 0) {
             throw new ApiError(404, 'No tank found.');
