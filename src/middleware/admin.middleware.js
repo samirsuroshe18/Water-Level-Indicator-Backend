@@ -7,7 +7,7 @@ const verifyAdmin = asyncHandler(async(req, _, next) => {
         
         const admin = await Tank.find({ user: req.user._id }).exec();
         if(!admin || admin.length === 0){
-            throw new ApiError(401, "You are not admin.");
+            throw new ApiError(401, "You are not admin register at least one device.");
         }
     
         req.admin = req.user;

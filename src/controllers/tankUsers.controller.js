@@ -14,9 +14,12 @@ const addTankUser = asyncHandler(async (req, res) => {
 
     const tankExists = await Tank.findOne({ 
         _id: tankId, 
-        deleted: false,
-        access: true
+        deleted: false
     });
+
+    if(tankExists &&!tankExists.access){
+        throw new ApiError(401, "Access Denied");
+    }
 
     if(!tankExists){
         throw new ApiError(401, "Invalid tank key or tank does not exists"); 
