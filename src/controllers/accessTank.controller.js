@@ -129,7 +129,8 @@ const getAccessTank = asyncHandler(async (req, res) =>{
                                 client: 1,
                                 loc: 1,
                                 node: 1,
-                                mac: 1
+                                mac: 1,
+                                access : 1
                             }
                         }
                     ],
@@ -156,18 +157,32 @@ const getAccessTank = asyncHandler(async (req, res) =>{
         }
     
         const tankDataPromises = tanks.map(async (tank) => {
-            const sqlQuery = `SELECT id, node, d1, d2, dtime, client, loc, mac FROM waterSensorData WHERE loc = ? AND client = ? AND node = ? AND mac = ? ORDER BY id DESC LIMIT 1`;
-            const params = [tank.tank.loc, tank.tank.client, tank.tank.node, tank.tank.mac];
-            
-            const [rows] = await conn.execute(sqlQuery, params);
-            return {
-                _id: tank._id,
-                admin: tank.admin,
-                ...rows[0] || null,
+            if(tank.tank.access){
+
+                const sqlQuery = `SELECT id, node, d1, d2, dtime, client, loc, mac FROM waterSensorData WHERE loc = ? AND client = ? AND node = ? AND mac = ? ORDER BY id DESC LIMIT 1`;
+                const params = [tank.tank.loc, tank.tank.client, tank.tank.node, tank.tank.mac];
+                
+                const [rows] = await conn.execute(sqlQuery, params);
+
+                const deviceDate = new Date(rows[0].dtime.replace(' ', 'T'));
+                const differenceInMs = new Date() - deviceDate;
+                const differenceInMinutes = differenceInMs / 1000 / 60;
+                let status = differenceInMinutes > 5 ? "Offline" : "Online";
+
+                return {
+                    _id: tank._id,
+                    admin: tank.admin,
+                    ...rows[0] || null,
+                    status
+                }
             }
           });
     
         const tankData = await Promise.all(tankDataPromises);
+
+        if (!tankData || tankData.length <= 0) {
+            throw new ApiError(404, 'No tank found.');
+        }
     
         return res.status(200).json(
             new ApiResponse(200, tankData, "Tank fetched successfully")

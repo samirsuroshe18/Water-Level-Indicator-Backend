@@ -14,11 +14,12 @@ const addTankUser = asyncHandler(async (req, res) => {
 
     const tankExists = await Tank.findOne({ 
         _id: tankId, 
-        deleted: false
-      });
+        deleted: false,
+        access: true
+    });
 
     if(!tankExists){
-        throw new ApiError(401, "Invalid tank key"); 
+        throw new ApiError(401, "Invalid tank key or tank does not exists"); 
     }
 
     const userExists = await User.findOne({ email: email });
