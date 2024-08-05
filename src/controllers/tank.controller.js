@@ -142,7 +142,7 @@ const getRegisteredTank = asyncHandler(async (req, res)=>{
       }).select("-createdAt -updatedAt -__v");
 
     if (!tanks || tanks.length <= 0) {
-        throw new ApiError(404, 'No tank data found.');
+        throw new ApiError(404, 'No Register Device found.');
     }
 
     return res.status(200).json(
