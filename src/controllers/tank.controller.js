@@ -202,7 +202,7 @@ const getAllClients = asyncHandler(async (req, res)=>{
 
 
 const getAllClientTanks = asyncHandler(async (req, res) => {
-    const clientName = req.query.clientName;
+    const {clientName} = req.body;
     const conn = await connectMysql();
     
     try {

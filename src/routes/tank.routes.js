@@ -11,7 +11,7 @@ router.route('/get-tank').get(verifyJwt, getTank);
 router.route('/get-registeredtank').get(verifyJwt, getRegisteredTank);
 router.route('/remove-tank').post(verifyJwt, removeTank);
 router.route('/get-clients').get(verifyJwt, verifySuperAdmin, getAllClients);
-router.route('/get-client-tanks').get(verifyJwt, verifySuperAdmin, getAllClientTanks);
+router.route('/get-client-tanks').post(verifyJwt, verifySuperAdmin, getAllClientTanks);
 router.route('/access').post(verifyJwt, verifySuperAdmin, tankAccessFromAdmin);
 router.route('/delete-reg-tank').post(verifyJwt, verifySuperAdmin, deleteTankFromAdmin);
 router.route('/add-table').get(addNewTable);
