@@ -46,6 +46,17 @@ const addTankUser = asyncHandler(async (req, res) => {
         throw new ApiError(500, "Something went wrong!!");
     }
 
+    const user = await AccessTank.create({
+        tankUserId: tankUser._id,
+        user: userExists._id,
+        admin: req.user._id,
+        tank: tankExists._id
+    });
+
+    if(!user){
+        throw new ApiError(500, "Something went wrong!!");
+    }
+
     return res.status(200).json(
         new ApiResponse(200, {}, "User Added Successfully")
     );
