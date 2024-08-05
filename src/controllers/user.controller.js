@@ -109,6 +109,44 @@ const loginUser = asyncHandler(async (req, res) => {
     );
 });
 
+const loginAdmin = asyncHandler(async (req, res) => {
+    const { email, password } = req.body;
+
+    if (!email) {
+        throw new ApiError(400, "email is required");
+    }
+
+    const user = await User.findOne({ email });
+
+    console.log("role : ",user.role);
+    if (!user || user.role !== 'superadmin') {
+        throw new ApiError(404, "Invalid credential");
+    }
+
+    // you cant access isPasswordCorrect method directly through 'User' beacause User is mogoose object 
+    // these methods is applied only the instance of the user when mongoose return its instance
+    // you can acces User.findOne() but you cant access User.isPasswordCorrect()
+    const isPasswordValid = await user.isPasswordCorrect(password);
+
+    if (!isPasswordValid) {
+        throw new ApiError(401, "Invalid credential");
+    }
+
+    const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id);
+
+    const loggedInUser = await User.findById(user._id).select("-password -refreshToken -__v");
+
+    //option object is created beacause we dont want to modified the cookie to front side
+    const option = {
+        httpOnly: true,
+        secure: true
+    }
+
+    res.status(200).cookie('accessToken', accessToken, option).cookie('refreshToken', refreshToken, option).json(
+        new ApiResponse(200, { loggedInUser, accessToken, refreshToken }, "User logged in sucessully")
+    );
+});
+
 const logoutUser = asyncHandler(async (req, res) => {
 
     await User.findByIdAndUpdate(req.user._id, { $unset: { refreshToken: 1 } }, { new: true });
@@ -223,5 +261,6 @@ export {
     changeCurrentPassword,
     getCurrentUser,
     updateAccountDetails,
-    forgotPassword
+    forgotPassword,
+    loginAdmin
 };

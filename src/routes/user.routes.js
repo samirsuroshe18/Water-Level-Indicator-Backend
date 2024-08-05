@@ -4,6 +4,7 @@ import {
     changeCurrentPassword, 
     forgotPassword, 
     getCurrentUser, 
+    loginAdmin, 
     loginUser, 
     logoutUser, 
     refreshAccessToken, 
@@ -14,6 +15,7 @@ const router = Router();
 
 router.route('/register').post(registerUser);
 router.route('/login').post(loginUser);
+router.route('/login-admin').post(loginAdmin);
 router.route('/forgot-password').post(forgotPassword);
 
 //Secure routes
