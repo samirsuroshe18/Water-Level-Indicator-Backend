@@ -14,7 +14,7 @@ const generateAccessAndRefreshToken = async (userId) => {
         user.refreshToken = refreshToken;
 
         // when we use save() method then all the fields are neccesary so to avoid that we have to pass an object with property {validatBeforeSave:false}
-        user.save({ validateBeforeSave: false });
+        await user.save({ validateBeforeSave: false });
 
         return { accessToken, refreshToken }
     } catch (error) {
@@ -45,7 +45,7 @@ const registerUser = asyncHandler(async (req, res) => {
         password,
     });
 
-    const createdUser = await User.findById(user._id).select("-password -refreshToken -__v");
+    const createdUser = await User.findById(user._id);
 
     if (!createdUser) {
         throw new ApiError(500, "Something went wrong");

@@ -30,7 +30,7 @@ const TankSchema = new Schema({
     role: { 
         type: String, 
         enum: ['user', 'admin'], 
-        default: 'admin' 
+        default: 'user' 
     },
 
     deleted: { 

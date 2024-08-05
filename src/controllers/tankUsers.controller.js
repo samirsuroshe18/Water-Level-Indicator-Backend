@@ -52,7 +52,7 @@ const addTankUser = asyncHandler(async (req, res) => {
 });
 
 const getTankUser = asyncHandler(async (req, res) => {
-    const admin = req.admin._id;
+    const admin = req.user._id;
 
     const response = await TankUser.aggregate([
         {
