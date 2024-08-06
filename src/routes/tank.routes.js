@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { verifyJwt } from "../middleware/auth.middleware.js";
-import { addNewTable, addTank, deleteTankFromAdmin, getAllClients, getAllClientTanks, getRegisteredTank, getTank, registerTank, removeTank, tankAccessFromAdmin } from "../controllers/tank.controller.js";
+import { addNewTable, addTank, deleteTankFromAdmin, getAllClients, getAllClientTanks, getRegisteredTank, getTank, registerTank, removeTank, tankAccessFromAdmin, updateTable } from "../controllers/tank.controller.js";
 import { verifySuperAdmin } from "../middleware/superAdmin.middleware.js";
 
 const router = Router();
@@ -15,5 +15,6 @@ router.route('/get-client-tanks').post(verifyJwt, verifySuperAdmin, getAllClient
 router.route('/access').post(verifyJwt, verifySuperAdmin, tankAccessFromAdmin);
 router.route('/delete-reg-tank').post(verifyJwt, verifySuperAdmin, deleteTankFromAdmin);
 router.route('/add-table').get(addNewTable);
+router.route('/update-table').post(updateTable);
 
 export default router;

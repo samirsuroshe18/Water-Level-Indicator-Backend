@@ -336,8 +336,27 @@ const addNewTable = asyncHandler(async(req, res)=>{
         }
 
         // Execute all promises and get the results
-        const results = await Promise.all(tankPromises);
+        const data = await Promise.all(tankPromises);
+        // Function to check if a date is valid
+        const isValidDate = date => {
+            return !isNaN(Date.parse(date));
+        };
+        
+        // Function to check if a MAC address is valid
+        const isValidMac = mac => {
+            // Regular expression to validate MAC address format
+            const macRegex = /^([0-9A-Za-z]{2}:){5}[0-9A-Za-z]{2}$/;
+            return macRegex.test(mac);
+        };
+        
+        // Filter out entries with invalid reading_time or invalid mac
+        const results = data.filter(entry => {
+            return isValidDate(entry.reading_time) && isValidMac(entry.mac);
+        });
+        // const results = data.filter(entry => entry.reading_time !== null );
+        console.log(results);
 
+        
         // Insert data into table
         const sql = `INSERT INTO device_info (client, node, mac, start_time) VALUES ?`;
         const values = results.map(item => [item.client, item.node, item.mac, item.reading_time]);
@@ -356,4 +375,59 @@ const addNewTable = asyncHandler(async(req, res)=>{
 });
 
 
-export{registerTank, getRegisteredTank, addTank, getTank, removeTank, getAllClientTanks, getAllClients, deleteTankFromAdmin, tankAccessFromAdmin, addNewTable}
+const updateTable = asyncHandler(async (req, res) => {
+    const conn = await connectMysql();
+    try {
+        const { client } = req.body;
+
+        const sqlQuery1 = `SELECT DISTINCT node, mac, client FROM waterSensorData WHERE client = ?`;
+        const params1 = [client];
+        const [rows1] = await conn.execute(sqlQuery1, params1);
+
+        const promises = rows1.map(async (tankItem) => {
+            const sqlQuery = `SELECT client, node, mac, reading_time FROM waterSensorData WHERE node = ? AND mac = ? AND client = ? ORDER BY reading_time ASC LIMIT 1`;
+            const params = [tankItem.node, tankItem.mac, tankItem.client];
+            const [rows] = await conn.execute(sqlQuery, params);
+            return rows[0] || null;
+        });
+
+        const data = await Promise.all(promises);
+
+        // Function to check if a date is valid
+        const isValidDate = date => !isNaN(Date.parse(date));
+        
+        // Function to check if a MAC address is valid
+        const isValidMac = mac => {
+            const macRegex = /^([0-9A-Za-z]{2}:){5}[0-9A-Za-z]{2}$/;
+            return macRegex.test(mac);
+        };
+        
+        // Filter out entries with invalid reading_time or invalid mac
+        const results = data.filter(entry => isValidDate(entry.reading_time) && isValidMac(entry.mac));
+
+        const deleteQuery = `DELETE FROM device_info WHERE client = ?`;
+        await conn.execute(deleteQuery, [client]);
+
+        // Insert data into table
+        // const sql = `INSERT INTO device_info (client, node, mac, start_time) VALUES ?`;
+        // const values = results.map(item => [item.client, item.node, item.mac, item.reading_time]);
+        // await conn.execute(sql, [values]);
+
+        // Insert data into table
+        const sql = `INSERT INTO device_info (client, node, mac, start_time) VALUES ?`;
+        const values = results.map(item => [item.client, item.node, item.mac, item.reading_time]);
+
+        conn.query(sql, [values], (error, results) => {
+        if (error) throw error;
+        console.log('Data inserted:', results);
+        });
+
+        res.status(200).json(new ApiResponse(200, {}, "Table updated successfully"));
+    } finally {
+        conn.release();
+    }
+});
+
+
+
+export{registerTank, getRegisteredTank, addTank, getTank, removeTank, getAllClientTanks, getAllClients, deleteTankFromAdmin, tankAccessFromAdmin, addNewTable, updateTable}
