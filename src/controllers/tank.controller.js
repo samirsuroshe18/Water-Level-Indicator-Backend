@@ -122,7 +122,7 @@ const getTank = asyncHandler(async (req, res)=>{
                 user: tank.user,
                 ...rows[0] || null,
                 status,
-                tannkName : tank.tankName
+                tankName : tank.tankName
             }
         });
       
