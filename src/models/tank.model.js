@@ -22,6 +22,11 @@ const TankSchema = new Schema({
         trim : true,
     },
 
+    tankName:{
+        type : String,
+        trim : true,
+    },
+
     mac:{
         type : String,
         trim : true,

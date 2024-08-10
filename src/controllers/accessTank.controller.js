@@ -42,7 +42,8 @@ const addAccessTank = asyncHandler(async (req, res) =>{
         tankUserId: tankId,
         user: userId,
         admin: tankExists.admin,
-        tank: tankExists.tank
+        tank: tankExists.tank,
+        tankName : tankExist.tankName || tankExist.node
     });
 
     if(!tankUser){
@@ -153,7 +154,8 @@ const getAccessTank = asyncHandler(async (req, res) =>{
                     _id: 1,
                     admin: 1,
                     user: 1,
-                    tank: 1
+                    tank: 1,
+                    tankName: 1
                 }
             }
         ]);
@@ -179,7 +181,8 @@ const getAccessTank = asyncHandler(async (req, res) =>{
                     _id: tank._id,
                     admin: tank.admin,
                     ...rows[0] || null,
-                    status
+                    status,
+                    tankName: tank.tankName
                 }
             }else{
                 return null;
@@ -187,7 +190,6 @@ const getAccessTank = asyncHandler(async (req, res) =>{
           });
 
           const tankData = (await Promise.all(tankDataPromises)).filter(data => data !== null);
-        console.log(tankData);
 
         if (!tankData || tankData.length <= 0) {
             throw new ApiError(404, 'No tank found.');
@@ -226,7 +228,29 @@ const removeAccessTank = asyncHandler(async (req, res) => {
     return res.status(200).json(
         new ApiResponse(200, {}, "Tank deleted successfully")
     );
-})
+});
+
+const updateAccessTank = asyncHandler(async (req, res) => {
+    const { tankName, tankId } = req.body; 
+
+    const tank = await AccessTank.findByIdAndUpdate(tankId,
+        {
+            $set: {
+                tankName: tankName,
+            }
+        },
+        { new: true }
+    );
+
+    if (!tank) {
+        throw new ApiError(404, "Tank not found or updation failed");
+    }
+
+    return res.status(200).json(
+        new ApiResponse(200, {}, "Tank name updated successfully")
+    );
+});
 
 
-export{addAccessTank, getAccessTank, removeAccessTank}
+
+export{addAccessTank, getAccessTank, removeAccessTank, updateAccessTank}

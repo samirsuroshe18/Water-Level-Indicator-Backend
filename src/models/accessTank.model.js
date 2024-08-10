@@ -22,6 +22,11 @@ const AccessTankSchema = new Schema({
         ref : "Tank"
     },
 
+    tankName:{
+        type : String,
+        trim : true,
+    },
+
 }, {timestamps : true})
  
 

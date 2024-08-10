@@ -40,6 +40,7 @@ const registerTank = asyncHandler(async (req, res) => {
             loc,
             node,
             mac,
+            tankName : node
         });
     
         if(!tank){
@@ -114,12 +115,14 @@ const getTank = asyncHandler(async (req, res)=>{
                 const differenceInMs = new Date() - deviceDate;
                 const differenceInMinutes = differenceInMs / 1000 / 60;
                 let status = differenceInMinutes > 5 ? "Offline" : "Online";
+                console.log(tank.tankName);
 
             return {
                 _id: tank._id,
                 user: tank.user,
                 ...rows[0] || null,
-                status
+                status,
+                tannkName : tank.tankName
             }
         });
       
@@ -175,6 +178,24 @@ const removeTank = asyncHandler(async (req, res)=>{
 
     return res.status(200).json(
         new ApiResponse(200, {}, "Tank deleted successfully")
+    );
+});
+
+const updateTank = asyncHandler(async(req, res)=>{
+    const { tankName, tankId } = req.body;
+
+    const tank = await Tank.findByIdAndUpdate(tankId, {
+        $set: {
+            tankName : tankName,
+        }
+    }, { new: true });
+
+    if(!tank){
+        throw new ApiError(401, "Tank updation failed!");
+    }
+
+    return res.status(200).json(
+        new ApiResponse(200, {}, "Tank name updated successfully")
     );
 });
 
@@ -430,4 +451,4 @@ const updateTable = asyncHandler(async (req, res) => {
 
 
 
-export{registerTank, getRegisteredTank, addTank, getTank, removeTank, getAllClientTanks, getAllClients, deleteTankFromAdmin, tankAccessFromAdmin, addNewTable, updateTable}
+export{registerTank, getRegisteredTank, addTank, getTank, removeTank, getAllClientTanks, getAllClients, deleteTankFromAdmin, tankAccessFromAdmin, addNewTable, updateTable, updateTank}
