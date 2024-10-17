@@ -1,5 +1,5 @@
 import express from "express";
-import cors from 'cors'
+import cors from 'cors';
 import cookieParser from "cookie-parser";
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
@@ -12,25 +12,25 @@ const __dirname = dirname(__filename);
 const staticPath = path.join(__dirname, '../public');
 
 app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, './views'))
+app.set('views', path.join(__dirname, './views'));
 
 // this use for cross origin sharing 
-app.use(cors({ origin: process.env.CORS_ORIGIN }))
+app.use(cors({ origin: process.env.CORS_ORIGIN }));
 // this middleware use for parsing the json data
-app.use(express.json())
+app.use(express.json());
 // this is used for parsing url data extended is used for nessted object
-app.use(express.urlencoded({ extended: true }))
+app.use(express.urlencoded({ extended: true }));
 // this is used for accessing public resources from server
-app.use(express.static(staticPath))
+app.use(express.static(staticPath));
 // this is used to parse the cookie
 app.use(cookieParser());
 
 // routes import
-import userRouter from './routes/user.routes.js'
-import emailRouter from './routes/email.routes.js'
-import tankRouter from './routes/tank.routes.js'
-import tankUsersRouter from './routes/tankUsers.routes.js'
-import accessTankRouter from './routes/accessTank.routes.js'
+import userRouter from './routes/user.routes.js';
+import emailRouter from './routes/email.routes.js';
+import tankRouter from './routes/tank.routes.js';
+import tankUsersRouter from './routes/tankUsers.routes.js';
+import accessTankRouter from './routes/accessTank.routes.js';
 
 //Routes declaration
 app.use("/api/v1/users", userRouter);
