@@ -53,7 +53,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
     const mailResponse = await mailSender(email, createdUser._id, "VERIFY");
 
-    if(mailResponse){
+    if (mailResponse) {
         return res.status(200).json(
             new ApiResponse(200, {}, "An email sent to your account please verify in 10 minutes")
         );
@@ -84,10 +84,10 @@ const loginUser = asyncHandler(async (req, res) => {
         throw new ApiError(401, "Invalid user credential");
     }
 
-    if(!user?.isVerfied){
+    if (!user?.isVerfied) {
         const mailResponse = await mailSender(email, user._id, "VERIFY");
 
-        if(mailResponse){
+        if (mailResponse) {
             return res.status(401).json(
                 new ApiResponse(401, {}, "An email sent to your account please verify in 10 minutes")
             );
@@ -118,7 +118,6 @@ const loginAdmin = asyncHandler(async (req, res) => {
 
     const user = await User.findOne({ email });
 
-    console.log("role : ",user.role);
     if (!user || user.role !== 'superadmin') {
         throw new ApiError(404, "Invalid credential");
     }
@@ -215,7 +214,7 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
 const forgotPassword = asyncHandler(async (req, res) => {
     const { email } = req.body;
 
-    const user = await User.findOne({email});
+    const user = await User.findOne({ email });
 
     if (!user || !user?.isVerfied) {
         throw new ApiError(404, "Invalid email");
@@ -223,7 +222,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
 
     const mailResponse = await mailSender(email, user._id, "RESET");
 
-    if(mailResponse){
+    if (mailResponse) {
         return res.status(200).json(
             new ApiResponse(200, {}, "An email sent to your account please reset your password in 10 minutes")
         );
@@ -243,7 +242,7 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
 
     const user = await User.findByIdAndUpdate(req.user?._id, {
         $set: {
-            userName : userName || req.user.userName,
+            userName: userName || req.user.userName,
         }
     }, { new: true }).select("-password -refreshToken");
 
