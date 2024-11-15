@@ -1,3 +1,5 @@
+import dotenv from "dotenv"
+dotenv.config()
 import express from "express";
 import cors from 'cors';
 import cookieParser from "cookie-parser";
@@ -31,6 +33,7 @@ import emailRouter from './routes/email.routes.js';
 import tankRouter from './routes/tank.routes.js';
 import tankUsersRouter from './routes/tankUsers.routes.js';
 import accessTankRouter from './routes/accessTank.routes.js';
+import limitFlowRouter from './routes/limitFlow.routes.js';
 
 //Routes declaration
 app.use("/api/v1/users", userRouter);
@@ -38,6 +41,7 @@ app.use("/api/v1/otp", emailRouter);
 app.use("/api/v1/tank", tankRouter);
 app.use("/api/v1/tank-users", tankUsersRouter);
 app.use("/api/v1/access-tank", accessTankRouter);
+app.use("/api/v1/limit-flow", limitFlowRouter);
 
 // Custom error handeling
 app.use((err, req, res, next) => {
