@@ -5,12 +5,12 @@ import ApiError from '../utils/ApiError.js';
 import asyncHandler from '../utils/asynchandler.js';
 
 
-const verifyEmail = asyncHandler( async (req, res)=>{
+const verifyEmail = asyncHandler(async (req, res) => {
   try {
     const token = req.query.token;
-    const user = await User.findOne({verifyToken:token, verifyTokenExpiry:{$gt: Date.now()}});
+    const user = await User.findOne({ verifyToken: token, verifyTokenExpiry: { $gt: Date.now() } });
 
-    if(!user){
+    if (!user) {
       return res.render("invalid")
     }
 
@@ -27,17 +27,17 @@ const verifyEmail = asyncHandler( async (req, res)=>{
   }
 });
 
-const resetPassword = asyncHandler( async (req, res)=>{
+const resetPassword = asyncHandler(async (req, res) => {
   try {
     const token = req.query.token;
 
-    const user = await User.findOne({forgotPasswordToken:token, forgotPasswordTokenExpiry:{$gt: Date.now()}});
+    const user = await User.findOne({ forgotPasswordToken: token, forgotPasswordTokenExpiry: { $gt: Date.now() } });
 
-    if(!user){
+    if (!user) {
       return res.render("invalidForgotLink")
     }
 
-    return res.render("forgotPasswordSuccess")
+    return res.render("forgotPasswordSuccess", { domain: process.env.DOMAIN })
 
   } catch (error) {
     console.log(error.message);
@@ -45,18 +45,18 @@ const resetPassword = asyncHandler( async (req, res)=>{
   }
 })
 
-const verifyPassword = asyncHandler( async (req, res)=>{
+const verifyPassword = asyncHandler(async (req, res) => {
   try {
     const token = req.query.token;
     const { password, confirmPassword } = req.body;
 
     if (password !== confirmPassword) {
       throw new ApiError(400, "Password do not match");
-  }
+    }
 
-    const user = await User.findOne({forgotPasswordToken:token, forgotPasswordTokenExpiry:{$gt: Date.now()}});
+    const user = await User.findOne({ forgotPasswordToken: token, forgotPasswordTokenExpiry: { $gt: Date.now() } });
 
-    if(!user){
+    if (!user) {
       throw new ApiError(500, "Invalid or expired token");
     }
 
@@ -76,4 +76,4 @@ const verifyPassword = asyncHandler( async (req, res)=>{
 })
 
 
-export{verifyEmail, resetPassword, verifyPassword}
+export { verifyEmail, resetPassword, verifyPassword }
