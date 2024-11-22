@@ -29,7 +29,7 @@ when the request is made with credentials. You must explicitly specify the allow
 
 */
 
-app.use(cors({ origin: [process.env.LIMIT_FLOW_DOMAIN, process.env.CORS_ORIGIN], credentials: true }));
+app.use(cors({ origin: [process.env.LIMIT_FLOW_DOMAIN, process.env.LIMIT_FLOW_DOMAIN_2, process.env.CORS_ORIGIN], credentials: true }));
 // this middleware use for parsing the json data
 app.use(express.json());
 // this is used for parsing url data extended is used for nessted object
