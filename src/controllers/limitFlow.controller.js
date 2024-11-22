@@ -25,7 +25,7 @@ const generateAccessAndRefreshToken = async (userId) => {
 
 const verifyJwtForLimitFlow = asyncHandler(async (req, _, next) => {
     try {
-        const token = req.header("Authorization")?.replace("Bearer ", "");
+        const token = req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ", "");
 
         if (!token) {
             throw new ApiError(401, "Unauthorised request");
@@ -72,7 +72,14 @@ const loginUser = asyncHandler(async (req, res) => {
 
     const loggedInUser = await LimitFlow.findById(user._id).select("-password -refreshToken -__v");
 
-    return res.json(
+    //option object is created beacause we dont want to modified the cookie to front side
+    const option = {
+        httpOnly: 'true' === process.env.HTTP_ONLY,
+        secure: 'true' === process.env.COOKIE_SECURE,
+        maxAge: Number(process.env.COOKIE_MAX_AGE),
+    }
+
+    return res.status(200).cookie('accessToken', accessToken, option).cookie('refreshToken', refreshToken, option).json(
         new ApiResponse(200, { loggedInUser, accessToken, refreshToken }, "User logged in sucessully")
     );
 });
@@ -84,8 +91,16 @@ const getCurrentUser = asyncHandler(async (req, res) => {
     );
 });
 
+const logoutUser = asyncHandler(async (req, res) => {
+
+    return res.status(200).clearCookie('accessToken').status(200).json(
+        new ApiResponse(200, req.user, "User logged out successfully")
+    );
+});
+
 export {
     loginUser,
     getCurrentUser,
-    verifyJwtForLimitFlow
+    verifyJwtForLimitFlow,
+    logoutUser
 }

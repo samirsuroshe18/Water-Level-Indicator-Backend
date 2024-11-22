@@ -17,7 +17,19 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, './views'));
 
 // this use for cross origin sharing 
-app.use(cors({ origin: process.env.CORS_ORIGIN }));
+
+/*
+
+Credentials in CORS requests: When you include withCredentials: true in the request (either in Axios or Fetch), 
+the browser requires the server to specify the exact allowed origin in the Access-Control-Allow-Origin header, 
+rather than allowing all origins with *.
+
+CORS Policy with credentials: The server cannot respond with Access-Control-Allow-Origin: * 
+when the request is made with credentials. You must explicitly specify the allowed origin in the CORS configuration.
+
+*/
+
+app.use(cors({ origin: [process.env.LIMIT_FLOW_DOMAIN, process.env.CORS_ORIGIN], credentials: true }));
 // this middleware use for parsing the json data
 app.use(express.json());
 // this is used for parsing url data extended is used for nessted object
