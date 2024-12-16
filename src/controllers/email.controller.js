@@ -22,7 +22,6 @@ const verifyEmail = asyncHandler(async (req, res) => {
     return res.render("success");
 
   } catch (error) {
-    console.log(error.message);
     return res.status(500).json({ success: false, error: error.message });
   }
 });
@@ -40,10 +39,9 @@ const resetPassword = asyncHandler(async (req, res) => {
     return res.render("forgotPasswordSuccess", { domain: process.env.DOMAIN })
 
   } catch (error) {
-    console.log(error.message);
     return res.status(500).json({ success: false, error: error.message });
   }
-})
+});
 
 const verifyPassword = asyncHandler(async (req, res) => {
   try {
@@ -70,10 +68,9 @@ const verifyPassword = asyncHandler(async (req, res) => {
     )
 
   } catch (error) {
-    console.log(error.message);
     return res.status(500).json({ success: false, error: error.message });
   }
-})
+});
 
 
 export { verifyEmail, resetPassword, verifyPassword }

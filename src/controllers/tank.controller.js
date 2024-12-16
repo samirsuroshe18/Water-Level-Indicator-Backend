@@ -56,7 +56,6 @@ const registerTank = asyncHandler(async (req, res) => {
     }
 });
 
-
 const addTank = asyncHandler(async (req, res) =>{
     const {tank} = req.body;
     const tankId = mongoose.Types.ObjectId.createFromHexString(tank);
@@ -91,7 +90,6 @@ const addTank = asyncHandler(async (req, res) =>{
     );
 });
 
-
 const getTank = asyncHandler(async (req, res)=>{
     const conn = await connectMysql();
     try{
@@ -115,7 +113,6 @@ const getTank = asyncHandler(async (req, res)=>{
                 const differenceInMs = new Date() - deviceDate;
                 const differenceInMinutes = differenceInMs / 1000 / 60;
                 let status = differenceInMinutes > 5 ? "Offline" : "Online";
-                console.log(tank.tankName);
 
             return {
                 _id: tank._id,
@@ -137,7 +134,6 @@ const getTank = asyncHandler(async (req, res)=>{
     }
 });
 
-
 const getRegisteredTank = asyncHandler(async (req, res)=>{
 
     const tanks = await Tank.find({ 
@@ -152,7 +148,6 @@ const getRegisteredTank = asyncHandler(async (req, res)=>{
         new ApiResponse(200, tanks, "Tank fetched successfully")
     );
 });
-
 
 const removeTank = asyncHandler(async (req, res)=>{
     const {tank} = req.body;
@@ -199,7 +194,6 @@ const updateTank = asyncHandler(async(req, res)=>{
     );
 });
 
-
 const getAllClients = asyncHandler(async (req, res)=>{
     const conn = await connectMysql();
     try{
@@ -220,7 +214,6 @@ const getAllClients = asyncHandler(async (req, res)=>{
         conn.release();
     }
 });
-
 
 const getAllClientTanks = asyncHandler(async (req, res) => {
     const {clientName} = req.body;
@@ -270,12 +263,11 @@ const getAllClientTanks = asyncHandler(async (req, res) => {
         );
     
     } catch (error) {
-        res.status(500).json({ statusCode: 500, message: error.message });
+        return res.status(500).json({ statusCode: 500, message: error.message });
     } finally {
         conn.release();
     }
 });
-
 
 const deleteTankFromAdmin = asyncHandler(async (req, res)=>{
     const {client, node, mac} = req.body;
@@ -295,7 +287,6 @@ const deleteTankFromAdmin = asyncHandler(async (req, res)=>{
     )
 });
 
-
 const tankAccessFromAdmin = asyncHandler(async (req, res)=>{
     const {client, node, mac} = req.body;
     const isDel = await Tank.findOneAndUpdate({client, node, mac}, [
@@ -310,7 +301,6 @@ const tankAccessFromAdmin = asyncHandler(async (req, res)=>{
         new ApiResponse(200, {}, "Device access modified successfully")
     );
 });
-
 
 const addNewTable = asyncHandler(async(req, res)=>{
     const conn = await connectMysql();
@@ -330,8 +320,6 @@ const addNewTable = asyncHandler(async(req, res)=>{
         const unique = table2.filter(item => !table1.includes(item));
         const unwantedElements = [null];
         const filteredData = unique.filter(item => !unwantedElements.includes(item));
-
-        console.log(filteredData);
 
         const tankPromises1 = filteredData.map(async (item)=>{
             const sqlQuery3 = `SELECT DISTINCT node, mac, client FROM waterSensorData WHERE client = ?`;
@@ -374,8 +362,6 @@ const addNewTable = asyncHandler(async(req, res)=>{
         const results = data.filter(entry => {
             return isValidDate(entry.reading_time) && isValidMac(entry.mac);
         });
-        // const results = data.filter(entry => entry.reading_time !== null );
-        console.log(results);
 
         
         // Insert data into table
@@ -384,17 +370,15 @@ const addNewTable = asyncHandler(async(req, res)=>{
 
         conn.query(sql, [values], (error, results) => {
         if (error) throw error;
-        console.log('Data inserted:', results);
         });
     
-        res.status(200).json(
+        return res.status(200).json(
             new ApiResponse(200, {}, "success")
-        )
+        );
     }finally{
         conn.release();
     }
 });
-
 
 const updateTable = asyncHandler(async (req, res) => {
     const conn = await connectMysql();
@@ -440,15 +424,13 @@ const updateTable = asyncHandler(async (req, res) => {
 
         conn.query(sql, [values], (error, results) => {
         if (error) throw error;
-        console.log('Data inserted:', results);
         });
 
-        res.status(200).json(new ApiResponse(200, {}, "Table updated successfully"));
+        return res.status(200).json(new ApiResponse(200, {}, "Table updated successfully"));
     } finally {
         conn.release();
     }
 });
-
 
 
 export{registerTank, getRegisteredTank, addTank, getTank, removeTank, getAllClientTanks, getAllClients, deleteTankFromAdmin, tankAccessFromAdmin, addNewTable, updateTable, updateTank}

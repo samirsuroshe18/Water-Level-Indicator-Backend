@@ -55,7 +55,6 @@ const addAccessTank = asyncHandler(async (req, res) =>{
     );
 });
 
-
 const getAccessTank = asyncHandler(async (req, res) =>{
     const conn = await connectMysql();
     try{
@@ -204,7 +203,6 @@ const getAccessTank = asyncHandler(async (req, res) =>{
     }
 });
 
-
 const removeAccessTank = asyncHandler(async (req, res) => {
     const {tank} = req.body;
     const tankId = mongoose.Types.ObjectId.createFromHexString(tank);
@@ -250,7 +248,6 @@ const updateAccessTank = asyncHandler(async (req, res) => {
         new ApiResponse(200, {}, "Tank name updated successfully")
     );
 });
-
 
 
 export{addAccessTank, getAccessTank, removeAccessTank, updateAccessTank}

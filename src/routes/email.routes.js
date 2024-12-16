@@ -1,5 +1,5 @@
 import { Router } from "express";
-import {verifyEmail, resetPassword, verifyPassword } from "../controllers/email.controller.js";
+import { verifyEmail, resetPassword, verifyPassword } from "../controllers/email.controller.js";
 
 const router = Router();
 

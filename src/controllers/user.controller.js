@@ -104,7 +104,7 @@ const loginUser = asyncHandler(async (req, res) => {
         secure: true
     }
 
-    res.status(200).cookie('accessToken', accessToken, option).cookie('refreshToken', refreshToken, option).json(
+    return res.status(200).cookie('accessToken', accessToken, option).cookie('refreshToken', refreshToken, option).json(
         new ApiResponse(200, { loggedInUser, accessToken, refreshToken }, "User logged in sucessully")
     );
 });
@@ -141,7 +141,7 @@ const loginAdmin = asyncHandler(async (req, res) => {
         secure: true
     }
 
-    res.status(200).cookie('accessToken', accessToken, option).cookie('refreshToken', refreshToken, option).json(
+    return res.status(200).cookie('accessToken', accessToken, option).cookie('refreshToken', refreshToken, option).json(
         new ApiResponse(200, { loggedInUser, accessToken, refreshToken }, "User logged in sucessully")
     );
 });
